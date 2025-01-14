@@ -1,0 +1,8 @@
+{
+  "name": "columnar-db",
+  "version": "1.0.0",
+  "dependencies": [
+    "snappy",
+    "gtest"
+  ]
+}

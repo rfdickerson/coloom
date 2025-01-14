@@ -22,7 +22,32 @@ To install the library, follow these steps:
    ```
    cd workspace-blank
    ```
-3. Build the library using CMake:
+3. Install vcpkg and integrate it with your system. Follow the instructions on the vcpkg GitHub repository to install vcpkg and set it up.
+4. Add a `vcpkg.json` file to the root of your project to specify the dependencies. For example, to include Snappy and Google Test, your `vcpkg.json` file should look like this:
+   ```json
+   {
+     "name": "columnar-db",
+     "version": "1.0.0",
+     "dependencies": [
+       "snappy",
+       "gtest"
+     ]
+   }
+   ```
+5. Modify your `CMakeLists.txt` file to use vcpkg and find the required packages. Add the following lines to the top of your `CMakeLists.txt` file:
+   ```cmake
+   cmake_minimum_required(VERSION 3.15)
+   set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+   ```
+6. Update your `CMakeLists.txt` file to find and link the required packages. For example, to find and link Snappy and Google Test, add the following lines:
+   ```cmake
+   find_package(Snappy REQUIRED)
+   find_package(GTest REQUIRED)
+
+   target_link_libraries(columnar_db PRIVATE Snappy::snappy)
+   target_link_libraries(test_columnar_db PRIVATE GTest::gtest GTest::gtest_main)
+   ```
+7. Build your project using CMake:
    ```
    mkdir build
    cd build
