@@ -65,6 +65,43 @@ TEST_F(ColumnarDBTest, HandleLargeDatasets) {
     }
 }
 
+TEST_F(ColumnarDBTest, PrimaryKeyFunctionality) {
+    // Set primary key
+    db.setPrimaryKey("column1");
+
+    // Add rows
+    db.addRow({"3", "data3"});
+    db.addRow({"1", "data1"});
+    db.addRow({"2", "data2"});
+
+    // Serialize and deserialize the database
+    db.serialize("test_primary_key.cdb");
+    ColumnarDB db2;
+    db2.deserialize("test_primary_key.cdb");
+
+    // Check that the data is sorted by primary key
+    EXPECT_EQ(db2.getData("column1"), std::vector<std::string>({"1", "2", "3"}));
+    EXPECT_EQ(db2.getData("column2"), std::vector<std::string>({"data1", "data2", "data3"}));
+}
+
+TEST_F(ColumnarDBTest, GranuleFunctionality) {
+    // Add a large number of rows to create multiple granules
+    for (int i = 0; i < 16384; ++i) {
+        db.addRow({std::to_string(i), "data" + std::to_string(i)});
+    }
+
+    // Serialize and deserialize the database
+    db.serialize("test_granules.cdb");
+    ColumnarDB db2;
+    db2.deserialize("test_granules.cdb");
+
+    // Check that the data matches
+    for (int i = 0; i < 16384; ++i) {
+        EXPECT_EQ(db2.getData("column1")[i], std::to_string(i));
+        EXPECT_EQ(db2.getData("column2")[i], "data" + std::to_string(i));
+    }
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

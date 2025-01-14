@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 enum class DataType {
     INT,
@@ -26,6 +27,13 @@ public:
         data[name] = std::vector<std::string>();
     }
 
+    void setPrimaryKey(const std::string& name) {
+        if (columns.find(name) == columns.end()) {
+            throw std::runtime_error("Primary key column does not exist");
+        }
+        primaryKey = name;
+    }
+
     void addRow(const std::vector<std::string>& row) {
         if (row.size() != columns.size()) {
             throw std::runtime_error("Row size does not match number of columns");
@@ -35,6 +43,13 @@ public:
         for (const auto& col : columns) {
             data[col.first].push_back(row[i]);
             ++i;
+        }
+
+        if (data.begin()->second.size() % 8192 == 0) {
+            granules.push_back(data);
+            for (auto& col : data) {
+                col.second.clear();
+            }
         }
     }
 
@@ -81,6 +96,8 @@ public:
 private:
     std::unordered_map<std::string, DataType> columns;
     std::unordered_map<std::string, std::vector<std::string>> data;
+    std::vector<std::unordered_map<std::string, std::vector<std::string>>> granules;
+    std::string primaryKey;
 
     void writeHeader(std::ofstream& file) {
         // Write file version
@@ -103,6 +120,9 @@ private:
 
         // Write compression method
         writeString(file, "Snappy");
+
+        // Write primary key
+        writeString(file, primaryKey);
     }
 
     void writeColumnData(std::ofstream& file, const std::string& name, DataType type) {
@@ -156,6 +176,9 @@ private:
         if (compressionMethod != "Snappy") {
             throw std::runtime_error("Unsupported compression method");
         }
+
+        // Read primary key
+        primaryKey = readString(file);
     }
 
     void readColumnData(std::ifstream& file, const std::string& name, DataType type) {

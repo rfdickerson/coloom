@@ -28,6 +28,10 @@ Metadata is stored at the beginning of the file and includes the following infor
 - Number of rows
 - Compression method
 
+### Primary Key
+
+A primary key is used to give the sort order for the rows. The primary key column must be unique and is used to determine the order in which rows are stored and retrieved.
+
 ## Data Storage
 
 ### Columnar Storage
@@ -46,6 +50,10 @@ Data is encoded using the following methods:
 - `STRING`: Stored as a length-prefixed binary value
 - `DATE`, `TIMESTAMP`: Stored as strings in the specified format
 
+### Granules
+
+Data is grouped into "granules" that are 8192 rows each. This allows for efficient data access and better compression.
+
 ## File Format Structure
 
 The file format is structured as follows:
@@ -63,6 +71,7 @@ The header is stored at the beginning of the file and includes the following fie
 - `Column Names and Data Types` (variable length): A list of column names and their corresponding data types.
 - `Number of Rows` (8 bytes): A 64-bit integer representing the number of rows in the table.
 - `Compression Method` (variable length): A string representing the compression method used (e.g., "Snappy").
+- `Primary Key` (variable length): The name of the primary key column.
 
 ### Column Data
 
