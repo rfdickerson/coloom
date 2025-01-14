@@ -102,6 +102,17 @@ TEST_F(ColumnarDBTest, GranuleFunctionality) {
     }
 }
 
+TEST_F(ColumnarDBTest, IndexingAndSearchFunctionality) {
+    // Create an index on column1
+    db.createIndex("column1");
+
+    // Perform a search on column1
+    std::vector<int> results = db.search("column1", "1");
+
+    // Check that the search results are correct
+    EXPECT_EQ(results, std::vector<int>({0}));
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

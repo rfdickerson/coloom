@@ -60,7 +60,8 @@ The file format is structured as follows:
 
 1. **Header**: Contains metadata about the file, including the file version, number of columns, column names and data types, number of rows, and compression method.
 2. **Column Data**: Each column is stored separately, with the data for each column compressed using Snappy compression.
-3. **Footer**: Contains a checksum to verify the integrity of the file.
+3. **Indexes**: Contains the indexing structure for faster search operations.
+4. **Footer**: Contains a checksum to verify the integrity of the file.
 
 ### Header
 
@@ -80,6 +81,19 @@ Each column is stored separately and compressed using Snappy compression. The da
 - `Column Name` (variable length): The name of the column.
 - `Data Type` (variable length): The data type of the column.
 - `Compressed Data` (variable length): The compressed data for the column.
+
+### Indexes
+
+Indexes are stored to allow for faster search operations. The indexing structure is stored in the following format:
+
+- `Number of Indexes` (4 bytes): A 32-bit integer representing the number of indexes.
+- `Index Entries` (variable length): A list of index entries, each containing:
+  - `Column Name` (variable length): The name of the indexed column.
+  - `Number of Entries` (4 bytes): A 32-bit integer representing the number of entries in the index.
+  - `Index Data` (variable length): A list of index data, each containing:
+    - `Value` (variable length): The value being indexed.
+    - `Number of Positions` (4 bytes): A 32-bit integer representing the number of positions for the value.
+    - `Positions` (variable length): A list of positions (row indices) where the value is found.
 
 ### Footer
 
