@@ -9,6 +9,7 @@ This project aims to create a columnar database file format with C++ and Snappy 
 - Support for various data types
 - Efficient data serialization and deserialization
 - Handling of edge cases, such as null values and large datasets
+- Indexing for faster search operations
 
 ## Installation
 
@@ -72,6 +73,12 @@ int main() {
     db.addRow({1, "data1"});
     db.addRow({2, "data2"});
 
+    // Create an index on column1
+    db.createIndex("column1");
+
+    // Perform a search on column1
+    std::vector<int> results = db.search("column1", "1");
+
     // Serialize the database to a file
     db.serialize("data.cdb");
 
@@ -82,5 +89,27 @@ int main() {
     return 0;
 }
 ```
+
+## Indexing and Search
+
+To improve search speed, the library supports creating indexes on specified columns and performing efficient searches using these indexes.
+
+### Creating an Index
+
+To create an index on a column, use the `createIndex` method:
+
+```cpp
+db.createIndex("column_name");
+```
+
+### Performing a Search
+
+To perform a search on an indexed column, use the `search` method:
+
+```cpp
+std::vector<int> results = db.search("column_name", "value");
+```
+
+The `search` method returns a vector of row indices where the specified value is found in the indexed column.
 
 For more detailed information on the file format and library usage, please refer to the [specification document](specification.md).

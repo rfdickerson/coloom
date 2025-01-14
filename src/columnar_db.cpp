@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <unordered_set>
 
 enum class DataType {
     INT,
@@ -53,6 +54,30 @@ public:
         }
     }
 
+    void createIndex(const std::string& columnName) {
+        if (columns.find(columnName) == columns.end()) {
+            throw std::runtime_error("Column does not exist");
+        }
+
+        std::unordered_map<std::string, std::unordered_set<int>> index;
+        for (int i = 0; i < data[columnName].size(); ++i) {
+            index[data[columnName][i]].insert(i);
+        }
+        indexes[columnName] = index;
+    }
+
+    std::vector<int> search(const std::string& columnName, const std::string& value) {
+        if (indexes.find(columnName) == indexes.end()) {
+            throw std::runtime_error("Index does not exist for the specified column");
+        }
+
+        std::vector<int> result;
+        if (indexes[columnName].find(value) != indexes[columnName].end()) {
+            result.insert(result.end(), indexes[columnName][value].begin(), indexes[columnName][value].end());
+        }
+        return result;
+    }
+
     void serialize(const std::string& filename) {
         std::ofstream file(filename, std::ios::binary);
         if (!file.is_open()) {
@@ -66,6 +91,9 @@ public:
         for (const auto& col : columns) {
             writeColumnData(file, col.first, col.second);
         }
+
+        // Write indexes
+        writeIndexes(file);
 
         // Write footer
         writeFooter(file);
@@ -87,6 +115,9 @@ public:
             readColumnData(file, col.first, col.second);
         }
 
+        // Read indexes
+        readIndexes(file);
+
         // Read footer
         readFooter(file);
 
@@ -98,6 +129,7 @@ private:
     std::unordered_map<std::string, std::vector<std::string>> data;
     std::vector<std::unordered_map<std::string, std::vector<std::string>>> granules;
     std::string primaryKey;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_set<int>>> indexes;
 
     void writeHeader(std::ofstream& file) {
         // Write file version
@@ -141,6 +173,27 @@ private:
         std::string compressedData;
         snappy::Compress(uncompressedData.data(), uncompressedData.size(), &compressedData);
         writeString(file, compressedData);
+    }
+
+    void writeIndexes(std::ofstream& file) {
+        int32_t numIndexes = indexes.size();
+        file.write(reinterpret_cast<const char*>(&numIndexes), sizeof(numIndexes));
+
+        for (const auto& index : indexes) {
+            writeString(file, index.first);
+            int32_t numEntries = index.second.size();
+            file.write(reinterpret_cast<const char*>(&numEntries), sizeof(numEntries));
+
+            for (const auto& entry : index.second) {
+                writeString(file, entry.first);
+                int32_t numPositions = entry.second.size();
+                file.write(reinterpret_cast<const char*>(&numPositions), sizeof(numPositions));
+
+                for (const auto& pos : entry.second) {
+                    file.write(reinterpret_cast<const char*>(&pos), sizeof(pos));
+                }
+            }
+        }
     }
 
     void writeFooter(std::ofstream& file) {
@@ -201,6 +254,33 @@ private:
         std::string value;
         while (std::getline(iss, value)) {
             data[name].push_back(value);
+        }
+    }
+
+    void readIndexes(std::ifstream& file) {
+        int32_t numIndexes;
+        file.read(reinterpret_cast<char*>(&numIndexes), sizeof(numIndexes));
+
+        for (int i = 0; i < numIndexes; ++i) {
+            std::string columnName = readString(file);
+            int32_t numEntries;
+            file.read(reinterpret_cast<char*>(&numEntries), sizeof(numEntries));
+
+            std::unordered_map<std::string, std::unordered_set<int>> index;
+            for (int j = 0; j < numEntries; ++j) {
+                std::string value = readString(file);
+                int32_t numPositions;
+                file.read(reinterpret_cast<char*>(&numPositions), sizeof(numPositions));
+
+                std::unordered_set<int> positions;
+                for (int k = 0; k < numPositions; ++k) {
+                    int pos;
+                    file.read(reinterpret_cast<char*>(&pos), sizeof(pos));
+                    positions.insert(pos);
+                }
+                index[value] = positions;
+            }
+            indexes[columnName] = index;
         }
     }
 
